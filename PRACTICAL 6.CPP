@@ -1,48 +1,48 @@
-
 #include <iostream>
 #include <climits>
 using namespace std;
 
-int main()
-{
-    int n;
-    int p[20];
+int matrixChainMultiplication(int p[], int n) {
+    // dp[i][j] = minimum number of multiplications
+    // needed to multiply matrices i through j
+    int dp[n][n];
 
-    cout << "Enter number of matrices: ";
-    cin >> n;
+    // Cost is 0 when multiplying one matrix
+    for (int i = 1; i < n; i++)
+        dp[i][i] = 0;
 
-    cout << "Enter dimensions of matrices: ";
-    for (int i = 0; i <= n; i++)
-    {
-        cin >> p[i];
-    }
-
-    int m[20][20] = {0};
-
-    for (int len = 2; len <= n; len++)
-    {
-        for (int i = 1; i <= n - len + 1; i++)
-        {
+    // chain length
+    for (int len = 2; len < n; len++) {
+        for (int i = 1; i < n - len + 1; i++) {
             int j = i + len - 1;
-            m[i][j] = INT_MAX;
+            dp[i][j] = INT_MAX;
 
-            for (int k = i; k < j; k++)
-            {
-                int cost = m[i][k] +
-                           m[k + 1][j] +
-                           p[i - 1] * p[k] * p[j];
+            for (int k = i; k < j; k++) {
+                int cost = dp[i][k]
+                         + dp[k + 1][j]
+                         + p[i - 1] * p[k] * p[j];
 
-                if (cost < m[i][j])
-                {
-                    m[i][j] = cost;
-                }
+                if (cost < dp[i][j])
+                    dp[i][j] = cost;
             }
         }
     }
 
-    cout << "Minimum number of scalar multiplications: "
-         << m[1][n] << endl;
+    return dp[1][n - 1];
+}
+
+int main() {
+    // Matrices:
+    // A1 = 10 x 20
+    // A2 = 20 x 30
+    // A3 = 30 x 40
+    // A4 = 40 x 30
+
+    int p[] = {10, 20, 30, 40, 30};
+    int n = sizeof(p) / sizeof(p[0]);
+
+    cout << "Minimum number of scalar multiplications = "
+         << matrixChainMultiplication(p, n);
 
     return 0;
 }
-
