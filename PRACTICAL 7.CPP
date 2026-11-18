@@ -8,80 +8,89 @@
 using namespace std;
 using namespace std::chrono;
 
-// ================== GREEDY APPROACH ==================
-// Picks the largest coin <= remaining amount, repeatedly.
-// NOTE: Greedy does NOT guarantee the optimal (minimum coin) answer
-// for arbitrary coin systems - only for "canonical" coin systems
-// (like standard currency 1,2,5,10...). {1,5,6,9} is NOT canonical.
+// GREEDY APPROACH
+// Select the largest coin first
 vector<int> coinExchangeGreedy(vector<int> coins, int amount)
 {
-    // Sort descending so we always try the biggest coin first
+    // Sort coins in descending order
     sort(coins.rbegin(), coins.rend());
 
     vector<int> usedCoins;
     int remaining = amount;
 
+    // Check each coin
     for (int c : coins)
     {
+        // Use the coin while it fits the remaining amount
         while (remaining >= c)
         {
             usedCoins.push_back(c);
             remaining -= c;
         }
     }
-    return usedCoins; // if remaining != 0 at the end, amount was not fully achievable
+
+    // Return selected coins
+    return usedCoins;
 }
 
-// ================== DYNAMIC PROGRAMMING APPROACH ==================
-// dp[i] = minimum number of coins needed to make amount i
-// Recurrence (matches your board):
-//      dp[i] = min( dp[i], dp[i - coin] + 1 )   for every coin <= i
-// Base case: dp[0] = 0 (zero coins needed to make amount 0)
+// DYNAMIC PROGRAMMING APPROACH
+// dp[i] = minimum coins required to make amount i
 void coinExchangeDP(vector<int> &coins, int amount)
 {
-    // dp[i] holds min coins to make amount i. Init to "infinity" (unreachable).
+    // Initialize DP array with infinity
     vector<int> dp(amount + 1, INT_MAX);
-    vector<int> lastCoinUsed(amount + 1, -1); // to reconstruct which coins were used
+
+    // Store the last coin used for each amount
+    vector<int> lastCoinUsed(amount + 1, -1);
+
+    // Base case: zero coins are needed for amount 0
     dp[0] = 0;
 
-    // ---------- Table exactly like your whiteboard ----------
-    // rows = coins (processed one at a time, cumulative),
-    // cols = amounts 0..amount
-    vector<vector<int>> table(coins.size(), vector<int>(amount + 1, -1));
+    // Create DP table for displaying results
+    vector<vector<int>> table(
+        coins.size(), vector<int>(amount + 1, -1));
 
+    // Process each coin
     for (size_t row = 0; row < coins.size(); row++)
     {
         int coin = coins[row];
 
+        // Calculate minimum coins for each amount
         for (int i = 0; i <= amount; i++)
         {
             if (i == 0)
             {
                 dp[i] = 0;
             }
+            // Check whether the current coin can be used
             else if (coin <= i && dp[i - coin] != INT_MAX)
             {
-                // Try using this coin: dp[i - coin] + 1
+                // Calculate the number of coins if this coin is used
                 if (dp[i - coin] + 1 < dp[i])
                 {
                     dp[i] = dp[i - coin] + 1;
                     lastCoinUsed[i] = coin;
                 }
             }
+
+            // Store the current DP result in the table
             table[row][i] = (dp[i] == INT_MAX ? -1 : dp[i]);
         }
     }
 
-    // ---------- Print the DP table (same shape as your board) ----------
-    cout << "\nDP Table (rows = coins used so far, cols = amount):\n\n";
+    // Display DP table
+    cout << "\nDP Table:\n";
     cout << "Coin\\Amt";
+
     for (int i = 0; i <= amount; i++)
         cout << "\t" << i;
+
     cout << "\n";
 
     for (size_t row = 0; row < coins.size(); row++)
     {
         cout << coins[row];
+
         for (int i = 0; i <= amount; i++)
         {
             if (table[row][i] == -1)
@@ -89,21 +98,25 @@ void coinExchangeDP(vector<int> &coins, int amount)
             else
                 cout << "\t" << table[row][i];
         }
+
         cout << "\n";
     }
 
-    // ---------- Print result ----------
-    cout << "\nMinimum coins needed for amount " << amount << ": ";
+    // Display minimum number of coins
+    cout << "\nMinimum coins needed: ";
+
     if (dp[amount] == INT_MAX)
     {
-        cout << "Not possible with given coins\n";
+        cout << "Not possible\n";
         return;
     }
+
     cout << dp[amount] << "\n";
 
-    // ---------- Reconstruct which coins were actually used ----------
+    // Find the actual coins used
     vector<int> usedCoins;
     int remaining = amount;
+
     while (remaining > 0)
     {
         int c = lastCoinUsed[remaining];
@@ -111,40 +124,59 @@ void coinExchangeDP(vector<int> &coins, int amount)
         remaining -= c;
     }
 
+    // Display selected coins
     cout << "Coins used: { ";
+
     for (int c : usedCoins)
         cout << c << " ";
+
     cout << "}\n";
 }
 
 int main()
 {
+    // Available coins and target amount
     vector<int> coins = {1, 5, 6, 9};
     int amount = 11;
 
-    cout << "Coins available : { ";
-    for (int c : coins) cout << c << " ";
-    cout << "} (unlimited supply)\n";
-    cout << "Amount to make   : " << amount << "\n";
+    cout << "Coins available: { 1 5 6 9 }\n";
+    cout << "Amount to make: " << amount << "\n";
 
-    // ---------------- GREEDY ----------------
+    // GREEDY APPROACH
     auto greedyStart = high_resolution_clock::now();
-    vector<int> greedyResult = coinExchangeGreedy(coins, amount);
+
+    vector<int> greedyResult =
+        coinExchangeGreedy(coins, amount);
+
     auto greedyEnd = high_resolution_clock::now();
-    auto greedyTime = duration_cast<nanoseconds>(greedyEnd - greedyStart);
+
+    // Calculate execution time
+    auto greedyTime =
+        duration_cast<nanoseconds>(greedyEnd - greedyStart);
 
     cout << "\n========== GREEDY APPROACH ==========\n";
-    cout << "Coins used ("<< greedyResult.size() <<"): { ";
-    for (int c : greedyResult) cout << c << " ";
+
+    cout << "Coins used: { ";
+    for (int c : greedyResult)
+        cout << c << " ";
+
     cout << "}\n";
+
+    cout << "Total coins: " << greedyResult.size() << "\n";
     cout << "Time Taken: " << greedyTime.count() << " ns\n";
 
-    // ---------------- DYNAMIC PROGRAMMING ----------------
-    cout << "\n========== DYNAMIC PROGRAMMING APPROACH ==========\n";
+    // DYNAMIC PROGRAMMING APPROACH
+    cout << "\n========== DYNAMIC PROGRAMMING ==========\n";
+
     auto dpStart = high_resolution_clock::now();
+
     coinExchangeDP(coins, amount);
+
     auto dpEnd = high_resolution_clock::now();
-    auto dpTime = duration_cast<nanoseconds>(dpEnd - dpStart);
+
+    // Calculate execution time
+    auto dpTime =
+        duration_cast<nanoseconds>(dpEnd - dpStart);
 
     cout << "Time Taken: " << dpTime.count() << " ns\n";
 
